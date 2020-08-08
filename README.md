@@ -1,0 +1,1 @@
+# OOT-Randomizer-Location-Fixer
