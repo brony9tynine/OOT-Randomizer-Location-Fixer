@@ -1,8 +1,12 @@
 from tkinter import *
 from tkinter import filedialog
+from tkinter import messagebox
+import json
+import os
 STATUS = "Select Input File"
 FILE_SELECTED = False
 Main_Window = Tk()
+NEWTEST = []
 import time
 Checks_By_Location = [
     [
@@ -45,7 +49,7 @@ Checks_By_Location = [
         "Graveyard Composers Grave Chest"
     ],  #Graveyard Composers Grave
     [
-        "Graveyard Heart Piece Grave"
+        "Graveyard Heart Piece Grave",
         "Graveyard Heart Piece Grave Chest"
     ],  #Graveyard Heart Piece Grave
     [
@@ -71,11 +75,11 @@ Checks_By_Location = [
         "HF Deku Scrub Grotto"
     ],  #HF Inside Fence Grotto
     [
-        "HF Near Kak Grotto"
+        "HF Near Kak Grotto",
         "HF GS Near Kak Grotto"
     ],  #HF Near Kak Grotto
     [
-        "HF Near Market Grotto"
+        "HF Near Market Grotto",
         "HF Near Market Grotto Chest"
     ],  #HF Near Market Grotto
     [
@@ -100,23 +104,24 @@ Checks_By_Location = [
     ],  #Kak Redead Grotto
     [
         "KF Storms Grotto",
-        "KF Storms Grotto Chest"
+        "KF Storms Grotto Chest",
     ],  #KF Storms Grotto
     [
         "Deku Theater",
         "Deku Theater Skull Mask",
-        "Deku Theater Mask Of Truth"
+        "Deku Theater Mask Of Truth",
     ],  #Deku Theater
     [
         "LW Scrubs Grotto",
         "LW Deku Scrub Grotto Rear",
-        "LW Deku Scrub Grotto Front"
+        "LW Deku Scrub Grotto Front",
+        "LW Scrubs Grotto"
     ],  #LW Scrubs Grotto
     [
         "LH Grotto",
         "LH Deku Scrub Grotto Left",
         "LH Deku Scrub Grotto Center",
-        "LH Deku Scrub Grotto Right"
+        "LH Deku Scrub Grotto Right",
     ],  #LH Grotto
     [
         "LLR Grotto",
@@ -322,7 +327,7 @@ Checks_By_Location = [
     ],  #Market Shooting Gallery
     [
         "Market Treasure Chest Game",
-        "Market Treasure Chest Game"
+        "Market Treasure Chest Game",
     ],  #Market Treasure Chest Game
     [
         "Market Guard House",
@@ -332,7 +337,8 @@ Checks_By_Location = [
     [
         "Temple of Time",
         "Sheik at Temple",
-        "ToT Light Arrows Cutscene"
+        "ToT Light Arrows Cutscene",
+        "Master Sword Pedestal"
     ],  #Temple of Time
     [
         "ZD Shop",
@@ -350,23 +356,77 @@ Checks_By_Location = [
         "ZF Great Fairy Reward"
     ]  #ZF Great Fairy Fountain
 ]
-
+LOCATION_CONVERT = {
+    "DMC Hammer Grotto": None,
+    "DMC Upper Grotto": None,
+    "DMT Storms Grotto": None,
+    "DMT Cow Grotto": None,
+    "Colossus Grotto": None,
+    "GV Storms Grotto": None,
+    "GC Grotto": None,
+    "Graveyard Composers Grave": None,
+    "Graveyard Heart Piece Grave": None,
+    "Graveyard Dampes Grave": None,
+    "Graveyard Shield Grave": None,
+    "HC Storms Grotto": None,
+    "HF Cow Grotto": None,
+    "HF Inside Fence Grotto": None,
+    "HF Near Kak Grotto": None,
+    "HF Near Market Grotto": None,
+    "HF Open Grotto": None,
+    "HF Southeast Grotto": None,
+    "Kak Open Grotto": None,
+    "Kak Redead Grotto": None,
+    "KF Storms Grotto": None,
+    "Deku Theater": None,
+    "LW Scrubs Grotto": None,
+    "LH Grotto": None,
+    "LLR Grotto": None,
+    "LW Near Shortcuts Grotto": None,
+    "SFM Wolfos Grotto": None,
+    "SFM Storms Grotto": None,
+    "ZR Open Grotto": None,
+    "ZR Storms Grotto:": None,
+    "DMT Great Fairy Fountain": None,
+    "Colossus Great Fairy Fountain": None,
+    "OGC Great Fairy Fountain": None,
+    "GC Shop": None,
+    "HC Great Fairy Fountain": None,
+    "Kak Potion Shop Back": None,
+    "Kak Impas House Back": None,
+    "Kak Bazaar": None,
+    "Kak House of Skulltula": None,
+    "Kak Impas House": None,
+    "Kak Potion Shop Front": None,
+    "Kak Shooting Gallery": None,
+    "Kak Windmill": None,
+    "KF Kokiri Shop": None,
+    "KF Links House": None,
+    "KF Midos House": None,
+    "LH Fishing Hole": None,
+    "LH Lab": None,
+    "LLR Stables": None,
+    "LLR Talons House": None,
+    "LLR Tower": None,
+    "Market Bazaar": None,
+    "Market Bombchu Bowling": None,
+    "Market Bombchu Shop": None,
+    "Market Potion Shop": None,
+    "Market Shooting Gallery": None,
+    "Market Treasure Chest Game": None,
+    "Market Guard House": None,
+    "Temple of Time": None,
+    "ZD Shop": None,
+    "ZF Great Fairy Fountain": None
+}
 Playthrough = []
-
-
-LOCATION_CONVERT = {}
 TEMP = []
-
 # Establishes new file data to be created
 FILE_DATA = ["FIXED LOCATIONS"]
 ENTRANCE_POINTERS = []
 ENTRANCES = []
-
-# stores the data in the new file's data and closes the old file as its no longer needed
-#FILE_VAR = open(filename, "r")
-#for LINE_NUM in FILE_VAR.readlines():
-#    FILE_DATA.append(LINE_NUM)
-#FILE_VAR.close()
+playthroughloc = []
+NEW_ENTRANCES = []
 
 
 def Fix_Entrances():
@@ -375,6 +435,39 @@ def Fix_Entrances():
             ENTRANCE_POINTERS.append(i + 1)
         elif '"locations"' in FILE_DATA[i]:
             ENTRANCE_POINTERS.append(i - 1)
+    for i in range(len(FILE_DATA)):
+        if '":playthrough":' in FILE_DATA[i]:
+            playthroughloc.append(i + 1)
+        elif 'entrance_playthrough' in FILE_DATA[i]:
+            playthroughloc.append(i - 1)
+    for i in range(ENTRANCE_POINTERS[0],ENTRANCE_POINTERS[1]):
+        ENTRANCES.append(FILE_DATA[i])
+    for i in range(playthroughloc[0],playthroughloc[1]):
+        Playthrough.append(FILE_DATA[i])
+    for i in range(len(ENTRANCES)):
+        while '  ' in ENTRANCES[i]:
+            ENTRANCES[i] = ENTRANCES[i].replace('  ', ' ')
+        ENTRANCES[i] = ENTRANCES[i].split(' -> ')
+        if "region" not in ENTRANCES[i][1]:
+            p1, p2 = ENTRANCES[i][1].split('": "')
+            ENTRANCES[i][1] = p1
+            ENTRANCES[i].append(p2)
+            NEW_ENTRANCES.append(ENTRANCES[i])
+    for i in range(len(Checks_By_Location)):
+        for x in range(len(NEW_ENTRANCES)):
+            if Checks_By_Location[i][0] in NEW_ENTRANCES[x][2]:
+                LOCATION_CONVERT[Checks_By_Location[i][0]] = NEW_ENTRANCES[x][1]
+                break
+    for i in range(len(Playthrough)):
+        TEMP = Playthrough[i].split(":")
+        TEMP[0] = TEMP[0].lstrip()
+        TEMP[0] = TEMP[0].replace('"', "")
+        for x in range(len(Checks_By_Location)):
+            if TEMP[0] in Checks_By_Location[x]:
+                TEMP2 = Playthrough[i].replace(Checks_By_Location[x][0], LOCATION_CONVERT[Checks_By_Location[x][0]])
+                FILE_DATA[i+playthroughloc[0]] = TEMP2
+                break
+
 
 
 def SAVE_FILE():
@@ -382,18 +475,13 @@ def SAVE_FILE():
     if FILE_SELECTED:
         refreshstatus("Patching")
         Fix_Entrances()
-        Main_Window.filename = filedialog.asksaveasfilename(initialdir="/", title="Save File",
+        Main_Window.filename = filedialog.asksaveasfilename(initialdir="/Users/"+os.getlogin()+"/Desktop", title="Save File",
                                                             filetypes=[("Json", '*.json'), ("All files", "*.*")])
         NEW_FILE = open(Main_Window.filename+".json", "w+")
         TEST = 0
         for i in range(len(FILE_DATA)):
-            if int(len(FILE_DATA)) - i > 3:
-                refreshstatus(FILE_DATA[TEST])
-                Main_Window.update_idletasks()
-            print(int(len(FILE_DATA))+1)
-            if int(len(FILE_DATA)) - i < 5:
-                print(int(len(FILE_DATA)) - i)
-                time.sleep(1)
+            refreshstatus("Patching: "+str(FILE_DATA[TEST]).strip())
+            Main_Window.update_idletasks()
             if TEST == 0:
                 refreshstatus(FILE_DATA[0])
                 NEW_FILE.write(FILE_DATA[0] + "\n")
@@ -402,23 +490,26 @@ def SAVE_FILE():
             TEST = TEST + 1
         NEW_FILE.close()
         #time.sleep(.1)
-        refreshstatus("File Created at: "+Main_Window.filename)
+        refreshstatus("File Created at: "+str(Main_Window.filename))
+        Main_Window.withdraw()
+        messagebox.showinfo("SUCCESS", "File created at: "+Main_Window.filename)
+
 
 def refreshstatus(STAT):
-    status = Label(Main_Window, text=str(STAT), bd=1, width=30, relief=SUNKEN, anchor=W)
+    status = Label(Main_Window, text=str(STAT), bd=1, width=28, relief=SUNKEN, anchor=W)
     status.grid(row=1, column=0, columnspan=3, sticky=W + E)
 
 
 def SELECT_FILE():
-    Main_Window.filename = filedialog.askopenfilename(initialdir="/", title="Select a file",
+    Main_Window.filename = filedialog.askopenfilename(initialdir="/Users/"+os.getlogin()+"/Desktop",
+                                                      title="Select a Spoiler log",
                                                       filetypes=(("json files", "*.json"),("all files", "*.*")))
-    FILE_VAR = open(Main_Window.filename, "r")
+
     FILE_VAR = open(Main_Window.filename, "r")
     for LINE_NUM in FILE_VAR.readlines():
         FILE_DATA.append(LINE_NUM)
         FILE_VAR.close()
 
-    #print(Main_Window.filename)
     global FILE_SELECTED
     FILE_SELECTED = True
     refreshstatus(Main_Window.filename)
@@ -427,8 +518,9 @@ def SELECT_FILE():
 
 #Main_Window.resizable(width=False, height=False)
 Main_Window.geometry("372x58")
-Main_Window.resizable(height = False, width = False)
 Main_Window.title("Randomizer Companion")
+screen_height = Main_Window.winfo_screenheight()
+screen_width = Main_Window.winfo_screenwidth()
 Button_Select_File = Button(Main_Window, text="Select File", width=24, command=SELECT_FILE)
 Button_Select_File.grid(row=0,column=0, sticky=W, pady=(0, 10), padx=(5,2.5))
 Button_Fix_Entrances = Button(Main_Window, text="Fix Entrances", width=24, command=SAVE_FILE)
